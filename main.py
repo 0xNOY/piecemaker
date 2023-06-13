@@ -1,6 +1,7 @@
 import functools
 import pickle
 import shutil
+import sys
 from base64 import b32encode
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -12,6 +13,8 @@ from typing import List, Optional, Tuple, Union
 import cv2
 import gradio as gr
 import numpy as np
+
+sys.path.append(str(Path(__file__).parent.absolute() / "track_anything"))
 
 from track_anything.app import (
     download_checkpoint,
