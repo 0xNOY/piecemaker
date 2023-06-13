@@ -152,11 +152,25 @@ class PieceMaker:
 
     def load_source_videos_for_gallery(self):
         frames = []
+        tmpl_names = [
+            path.name.split(".")[0]
+            for path in self.src_tmpl_dir.glob(f"*{TMPL_SUFFIX}")
+        ]
         for path in self.src_video_dir.glob("*"):
             if not path.suffix in VIDEO_SUFFIX:
                 continue
-            frame = get_first_frame_from_video(path)
-            frames.append((frame, path.name.split(".")[0]))
+
+            name = path.name.split(".")[0]
+
+            if name in tmpl_names:
+                with open(self.src_tmpl_dir / f"{name}{TMPL_SUFFIX}", "rb") as f:
+                    tmpl_state: TemplateFrame = pickle.load(f)
+                    frame = tmpl_state.painted_img
+            else:
+                frame = get_first_frame_from_video(path)
+
+            frames.append((frame, name))
+
         return frames
 
     def delete_source(self):
@@ -202,14 +216,13 @@ class PieceMaker:
         self.track_anything.samcontroler.sam_controler.reset_image()
         self.track_anything.samcontroler.sam_controler.set_image(tmpl_state.img)
 
-        mask, logit, painted_img = self.track_anything.first_frame_click(
+        mask, _, painted_img = self.track_anything.first_frame_click(
             tmpl_state.img,
             np.array(tmpl_state.clicks[0]),
             np.array(tmpl_state.clicks[1]),
         )
 
         tmpl_state.mask = mask
-        tmpl_state.logit = logit
         tmpl_state.painted_img = painted_img
 
         return tmpl_state, gr.update(value=tmpl_state.painted_img)
@@ -224,7 +237,7 @@ class PieceMaker:
     def make_pieces(
         self,
         queue: List[TemplateFrame],
-        max_y_size: int,
+        max_short_side_size: int,
         max_fps: int,
         sequential_num: bool,
     ):
@@ -242,9 +255,11 @@ class PieceMaker:
             fps = cap.get(cv2.CAP_PROP_FPS)
             max_fps = min(max_fps, fps)
             fps_ratio = int(fps / max_fps)
-            heigt = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-            max_y_size = min(max_y_size, heigt)
-            scale = max_y_size / heigt
+            height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+            width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+            short_side = min(height, width)
+            max_short_side_size = min(max_short_side_size, short_side)
+            scale = max_short_side_size / short_side
             j = -1
 
             while cap.isOpened():
@@ -257,9 +272,14 @@ class PieceMaker:
                     continue
 
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                frame = cv2.resize(
-                    frame, None, fx=scale, fy=scale, interpolation=cv2.INTER_LANCZOS4
-                )
+                if scale != 1:
+                    frame = cv2.resize(
+                        frame,
+                        None,
+                        fx=scale,
+                        fy=scale,
+                        interpolation=cv2.INTER_LANCZOS4,
+                    )
 
                 frames.append(frame)
 
@@ -350,8 +370,11 @@ class PieceMaker:
 
                     with gr.Column() as box_make_piece:
                         gr.Markdown("## Step4: Make Pieces")
-                        slider_max_y_size = gr.Slider(
-                            label="Max Y Size", minimum=144, maximum=1080, value=480
+                        slider_max_short_side_size = gr.Slider(
+                            label="Max Short Side Size",
+                            minimum=144,
+                            maximum=1080,
+                            value=480,
                         )
                         slider_max_fps = gr.Slider(
                             label="Max FPS", minimum=1, maximum=30, value=10
@@ -386,3 +409,12 @@ class PieceMaker:
                 inputs=[tmpl_state, queue],
                 outputs=[img_tmpl_preview, queue],
             )
+
+        return root
+
+    def run(self):
+        self.build_ui().launch(server_port=self.port)
+
+
+if __name__ == "__main__":
+    PieceMaker().run()
