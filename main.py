@@ -170,10 +170,10 @@ class PieceMaker:
 
     def load_source_videos_for_gallery(self):
         frames = []
-        tmpl_names = [
+        tmpl_names = set(
             path.name.split(".")[0]
             for path in self.src_tmpl_dir.glob(f"*{TMPL_SUFFIX}")
-        ]
+        )
         for path in self.src_video_dir.glob("*"):
             if not path.suffix in VIDEO_SUFFIX:
                 continue
@@ -250,7 +250,12 @@ class PieceMaker:
             pickle.dump(tmpl_state, f)
 
         queue.append(tmpl_state)
-        return gr.update(value=None, label=None), queue
+
+        queue_gallery = []
+        for tmpl_state in queue:
+            queue_gallery.append((tmpl_state.painted_img, tmpl_state.name))
+
+        return (gr.update(value=None, label=None), queue, queue_gallery)
 
     def make_pieces(
         self,
@@ -424,7 +429,7 @@ class PieceMaker:
             btn_add_to_queue.click(
                 self.add_to_queue,
                 inputs=[tmpl_state, queue],
-                outputs=[img_tmpl_preview, queue],
+                outputs=[img_tmpl_preview, queue, queue_gallery],
             )
 
         return root
