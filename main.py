@@ -421,6 +421,7 @@ class PieceMaker:
 
                     with gr.Column() as box_make_piece:
                         gr.Markdown("## Step4: Make Pieces")
+                        gr.Markdown(f"result will be saved in {self.dst_piece_dir.absolute()}")
                         slider_max_short_side_size = gr.Slider(
                             label="Max Short Side Size",
                             minimum=144,
