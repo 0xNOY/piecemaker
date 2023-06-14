@@ -284,6 +284,7 @@ class PieceMaker:
         queue: List[TemplateFrame],
         max_short_side_size: int,
         max_fps: int,
+        remove_background: bool,
         sequential_num: bool,
     ):
         n = len(queue)
@@ -351,6 +352,10 @@ class PieceMaker:
             for j, (frame, mask) in enumerate(zip(frames, masks)):
                 num = str(j).zfill(len_n_frames)
                 piece = frame.copy()
+
+                if remove_background:
+                    piece = cv2.bitwise_and(piece, piece, mask=mask)
+
                 bound_rect = cv2.boundingRect(mask)
                 piece = piece[
                     bound_rect[1] : bound_rect[1] + bound_rect[3],
@@ -437,6 +442,9 @@ class PieceMaker:
                         slider_max_fps = gr.Slider(
                             label="Max FPS", minimum=1, maximum=30, value=10, step=1
                         )
+                        checkbox_remove_background = gr.Checkbox(
+                            label="Remove Background", value=True
+                        )
                         checkbox_sequential_num = gr.Checkbox(
                             label="Sequential numbering of Dirs", value=True
                         )
@@ -494,6 +502,7 @@ class PieceMaker:
                     queue,
                     slider_max_short_side_size,
                     slider_max_fps,
+                    checkbox_remove_background,
                     checkbox_sequential_num,
                 ],
                 outputs=[queue_gallery, queue],
