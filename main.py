@@ -348,7 +348,7 @@ class PieceMaker:
                 data_name = f"{num}_{data_name}"
 
             piece_dir = self.dst_piece_dir / shot_name / data_name
-            piece_dir.mkdir(exist_ok=True)
+            piece_dir.mkdir(exist_ok=True, parents=True)
 
             len_n_frames = len(str(len(frames)))
             for j, (frame, mask) in enumerate(zip(frames, masks)):
