@@ -606,7 +606,7 @@ class PieceMaker:
             )
 
             checkbox_enable_container.change(
-                lambda checkbox: gr.update(visible=checkbox.value),
+                lambda checkbox: gr.update(visible=checkbox),
                 inputs=[checkbox_enable_container],
                 outputs=[slider_container_size],
             )
