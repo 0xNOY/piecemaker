@@ -35,7 +35,7 @@ SAM_CHECKPOINT_DICT = {
     },
 }
 
-VIDEO_SUFFIX = [".mp4", ".avi", ".mov", ".mkv"]
+VIDEO_SUFFIX = {".mp4", ".avi", ".mov", ".mkv", ".MP4", ".AVI", ".MOV", ".MKV"}
 
 TMPL_SUFFIX = ".tmpl.pkl"
 
