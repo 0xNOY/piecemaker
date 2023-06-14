@@ -360,7 +360,7 @@ class PieceMaker:
                             label="Source Thumbnails",
                             every=2,
                         ).style(
-                            column=4,
+                            columns=4,
                             object_fit="scale-down",
                         )
                         btn_delete_source = gr.Button(
@@ -374,7 +374,7 @@ class PieceMaker:
                             label="Point prompt",
                             choices=["Positive", "Negative"],
                             value="Positive",
-                        ).style(width="")
+                        )
                         btn_undo_click = gr.Button("Undo")
                         btn_clear_clicks = gr.Button("Clear Clicks")
                     img_tmpl_preview = gr.Image(label="Template Frame")
