@@ -453,7 +453,7 @@ class PieceMaker:
                             step=1,
                         )
                         slider_max_fps = gr.Slider(
-                            label="Max FPS", minimum=1, maximum=30, value=10, step=1
+                            label="Max FPS", minimum=1, maximum=30, value=6, step=1
                         )
                         checkbox_remove_background = gr.Checkbox(
                             label="Remove Background", value=True
