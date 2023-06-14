@@ -75,7 +75,7 @@ def download_checkpoint(url, folder, filename):
     filepath = os.path.join(folder, filename)
 
     if not os.path.exists(filepath):
-        print("download checkpoints ......")
+        print(f"download checkpoints ({url})...")
         response = requests.get(url, stream=True)
         with open(filepath, "wb") as f:
             for chunk in response.iter_content(chunk_size=8192):
