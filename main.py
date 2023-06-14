@@ -379,6 +379,9 @@ class PieceMaker:
                     with gr.Column() as box_send_video:
                         gr.Markdown("## Step1: Input Video")
                         gr.Markdown("Input preview is available only for `mp4`.")
+                        gr.Markdown(
+                            "The data name is the name of the directory in which the results will be stored. Therefore, enter only characters that can be used in the directory name."
+                        )
                         data_name = gr.Textbox(lines=1, label="Data Name")
                         input_video = gr.Video(label="Input Video")
                         btn_send_video = gr.Button("Send", variant="primary")
