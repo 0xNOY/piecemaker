@@ -405,7 +405,9 @@ class PieceMaker:
                         )
                         btn_undo_click = gr.Button("Undo")
                         btn_clear_clicks = gr.Button("Clear Clicks")
-                    img_tmpl_preview = gr.Image(label="Template Frame")
+                    img_tmpl_preview = gr.Image(
+                        label="Template Frame", interactive=False
+                    )
                     btn_add_to_queue = gr.Button("Add to Queue", variant="primary")
 
                 with gr.Row():
