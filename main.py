@@ -378,7 +378,7 @@ class PieceMaker:
                 with gr.Row():
                     with gr.Column() as box_send_video:
                         gr.Markdown("## Step1: Input Video")
-                        gr.Markdown("preview is available only for mp4")
+                        gr.Markdown("Input preview is available only for `mp4`.")
                         data_name = gr.Textbox(lines=1, label="Data Name")
                         input_video = gr.Video(label="Input Video")
                         btn_send_video = gr.Button("Send", variant="primary")
@@ -421,7 +421,9 @@ class PieceMaker:
 
                     with gr.Column() as box_make_piece:
                         gr.Markdown("## Step4: Make Pieces")
-                        gr.Markdown(f"result will be saved in {self.dst_piece_dir.absolute()}")
+                        gr.Markdown(
+                            f"The result will be saved in `{self.dst_piece_dir.absolute()}`."
+                        )
                         slider_max_short_side_size = gr.Slider(
                             label="Max Short Side Size",
                             minimum=144,
