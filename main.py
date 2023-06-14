@@ -288,10 +288,21 @@ class PieceMaker:
         sequential_num: bool,
     ):
         shot_name = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-
         n = len(queue)
+
+        print(
+            "==========================\n"
+            f"Making Pieces: {shot_name}\n"
+            f"  max_short_side_size={max_short_side_size}\n"
+            f"  max_fps={max_fps}\n"
+            f"  remove_background={remove_background}\n"
+            f"  sequential_num={sequential_num}\n"
+            f"  src_num={n}\n"
+            "=========================="
+        )
+
         for i, tmpl_state in enumerate(queue):
-            print(f"Making Pieces: {tmpl_state.name} ({i+1}/{n})")
+            print(f"Making Pieces of {tmpl_state.name} ({i+1}/{n})")
 
             if tmpl_state.mask is None:
                 continue
