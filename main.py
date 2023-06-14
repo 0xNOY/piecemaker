@@ -287,6 +287,8 @@ class PieceMaker:
         remove_background: bool,
         sequential_num: bool,
     ):
+        shot_name = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+
         n = len(queue)
         for i, tmpl_state in enumerate(queue):
             print(f"Making Pieces: {tmpl_state.name} ({i+1}/{n})")
@@ -345,7 +347,7 @@ class PieceMaker:
                 num = str(i).zfill(len(str(n)))
                 data_name = f"{num}_{data_name}"
 
-            piece_dir = self.dst_piece_dir / data_name
+            piece_dir = self.dst_piece_dir / shot_name / data_name
             piece_dir.mkdir(exist_ok=True)
 
             len_n_frames = len(str(len(frames)))
