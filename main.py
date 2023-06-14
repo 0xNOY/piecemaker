@@ -35,7 +35,7 @@ SAM_CHECKPOINT_DICT = {
     },
 }
 
-VIDEO_SUFFIX = {".mp4", ".avi", ".mov", ".mkv", ".MP4", ".AVI", ".MOV", ".MKV"}
+VIDEO_SUFFIX = {".mp4", ".mov", ".MP4", ".MOV"}
 
 TMPL_SUFFIX = ".tmpl.pkl"
 
@@ -396,7 +396,10 @@ class PieceMaker:
                 with gr.Row():
                     with gr.Column() as box_send_video:
                         gr.Markdown("## Step1: Input Video")
-                        gr.Markdown("Input preview is available only for `mp4`.")
+                        gr.Markdown(
+                            f"Input preview is available only for `mp4`. "
+                            f"You can input following formats: [{', '.join([f'`{e}`' for e in VIDEO_SUFFIX])}]"
+                        )
                         gr.Markdown(
                             "The data name is the name of the directory in which the results will be stored. Therefore, enter only characters that can be used in the directory name."
                         )
