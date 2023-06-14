@@ -417,7 +417,7 @@ class PieceMaker:
 
             img_tmpl_preview.select(
                 self.sam_refine,
-                inputs=[radio_point_prompt, tmpl_state],
+                inputs=[img_tmpl_preview, radio_point_prompt, tmpl_state],
                 outputs=[tmpl_state, img_tmpl_preview],
             )
 
