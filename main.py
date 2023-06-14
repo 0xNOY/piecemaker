@@ -181,8 +181,6 @@ class PieceMaker:
 
             name = path.name.split(".")[0]
 
-            print(f"\ntmpl_names: {tmpl_names}\nname: {name}")
-
             if name in tmpl_names:
                 with open(self.src_tmpl_dir / f"{name}{TMPL_SUFFIX}", "rb") as f:
                     tmpl_state: TemplateFrame = pickle.load(f)
@@ -218,6 +216,32 @@ class PieceMaker:
             [(img[0]["name"], img[1]) for img in srcs],
         )
 
+    def _sam_refine(
+        self,
+        tmpl_state: TemplateFrame,
+    ):
+        self.track_anything.samcontroler.sam_controler.reset_image()
+        self.track_anything.samcontroler.sam_controler.set_image(tmpl_state.img)
+
+        mask, _, painted_img = self.track_anything.first_frame_click(
+            tmpl_state.img,
+            np.array(tmpl_state.clicks[0]),
+            np.array(tmpl_state.clicks[1]),
+        )
+
+        tmpl_state.mask = mask
+        tmpl_state.painted_img = painted_img
+
+        return tmpl_state
+
+    def undo_click(self, tmpl_state: TemplateFrame):
+        tmpl_state.clicks[0].pop()
+        tmpl_state.clicks[1].pop()
+
+        tmpl_state = self._sam_refine(tmpl_state)
+
+        return tmpl_state, gr.update(value=tmpl_state.painted_img)
+
     def sam_refine(
         self,
         tmpl_img,
@@ -236,17 +260,7 @@ class PieceMaker:
         tmpl_state.clicks[0].append(point[0])
         tmpl_state.clicks[1].append(point[1])
 
-        self.track_anything.samcontroler.sam_controler.reset_image()
-        self.track_anything.samcontroler.sam_controler.set_image(tmpl_state.img)
-
-        mask, _, painted_img = self.track_anything.first_frame_click(
-            tmpl_state.img,
-            np.array(tmpl_state.clicks[0]),
-            np.array(tmpl_state.clicks[1]),
-        )
-
-        tmpl_state.mask = mask
-        tmpl_state.painted_img = painted_img
+        tmpl_state = self._sam_refine(tmpl_state)
 
         return tmpl_state, gr.update(value=tmpl_state.painted_img)
 
@@ -350,6 +364,8 @@ class PieceMaker:
 
                 cv2.imwrite(str(piece_dir / f"{num}.png"), piece)
 
+        return gr.update(value=None), []
+
     def build_ui(self):
         with gr.Blocks(title="PieceMaker") as root:
             tmpl_state = gr.State(TemplateFrame("", ([], [])))
@@ -392,7 +408,9 @@ class PieceMaker:
                 with gr.Row():
                     with gr.Column() as box_queue:
                         gr.Markdown("## Queue")
-                        queue_gallery = gr.Gallery(label="Queue Thumbnails")
+                        queue_gallery = gr.Gallery(label="Queue Thumbnails").style(
+                            columns=4, object_fit="scale-down"
+                        )
                         btn_clear_queue = gr.Button("Clear Queue", variant="stop")
 
                     with gr.Column() as box_make_piece:
@@ -425,6 +443,21 @@ class PieceMaker:
                 outputs=[img_tmpl_preview, tmpl_state, source_gallery],
             )
 
+            btn_undo_click.click(
+                self.undo_click,
+                inputs=[tmpl_state],
+                outputs=[tmpl_state, img_tmpl_preview],
+            )
+
+            btn_clear_clicks.click(
+                lambda tmpl_state: (
+                    TemplateFrame(tmpl_state.name, ([], []), tmpl_state.img),
+                    gr.update(value=tmpl_state.img),
+                ),
+                inputs=[tmpl_state],
+                outputs=[tmpl_state, img_tmpl_preview],
+            )
+
             img_tmpl_preview.select(
                 self.sam_refine,
                 inputs=[img_tmpl_preview, radio_point_prompt, tmpl_state],
@@ -435,6 +468,22 @@ class PieceMaker:
                 self.add_to_queue,
                 inputs=[tmpl_state, queue],
                 outputs=[img_tmpl_preview, queue, queue_gallery],
+            )
+
+            btn_clear_queue.click(
+                lambda: (gr.update(value=None), []),
+                outputs=[queue_gallery, queue],
+            )
+
+            btn_make_pieces.click(
+                self.make_pieces,
+                inputs=[
+                    queue,
+                    slider_max_short_side_size,
+                    slider_max_fps,
+                    checkbox_sequential_num,
+                ],
+                outputs=[queue_gallery, queue],
             )
 
         return root
