@@ -302,7 +302,7 @@ class PieceMaker:
             f"  remove_background={remove_background}\n"
             f"  sequential_num={sequential_num}\n"
             f"  enable_container={enable_container}\n"
-            (f"  container_size={container_size}\n" if enable_container else "")
+            f"  container_size={container_size}\n"
             f"  border_size={border_size}\n"
             f"  mask_dilation_ratio={mask_dilation_ratio}\n"
             f"  src_num={n}\n"
@@ -414,8 +414,12 @@ class PieceMaker:
                         (container_size, container_size, 3), dtype=np.uint8
                     )
                     container[
-                        (container_size - piece.shape[0]) // 2 : (container_size + piece.shape[0]) // 2,
-                        (container_size - piece.shape[1]) // 2 : (container_size + piece.shape[1]) // 2,
+                        (container_size - piece.shape[0])
+                        // 2 : (container_size + piece.shape[0])
+                        // 2,
+                        (container_size - piece.shape[1])
+                        // 2 : (container_size + piece.shape[1])
+                        // 2,
                     ] = piece
                     piece = container
 
@@ -506,7 +510,11 @@ class PieceMaker:
                             label="Max FPS", minimum=1, maximum=30, value=6, step=1
                         )
                         slider_border_size = gr.Slider(
-                            label="Border Size", minimum=0, maximum=100, value=12, step=1
+                            label="Border Size",
+                            minimum=0,
+                            maximum=100,
+                            value=12,
+                            step=1,
                         )
                         slider_mask_dilation_ratio = gr.Slider(
                             label="Mask Dilation Ratio",
@@ -515,7 +523,7 @@ class PieceMaker:
                             value=0,
                             step=1,
                         )
-                        
+
                         checkbox_enable_container = gr.Checkbox(
                             label="Enable Img Container", value=True
                         )
