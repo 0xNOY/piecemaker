@@ -7,7 +7,8 @@
 #### 事前に必要なもの
 
 - Python >= 3.8
-- torch >= 1.10
+- PyTorch
+- CUDA
 - Webブラウザ
 
 #### インストール
