@@ -313,7 +313,6 @@ class PieceMaker:
                 if j % fps_ratio != 0:
                     continue
 
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 if scale != 1:
                     frame = cv2.resize(
                         frame,
