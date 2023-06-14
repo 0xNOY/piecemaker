@@ -377,13 +377,13 @@ class PieceMaker:
             with gr.Column():
                 with gr.Row():
                     with gr.Column() as box_send_video:
-                        gr.Markdown("## Step1: Input Videos")
+                        gr.Markdown("## Step1: Input Video")
                         data_name = gr.Textbox(lines=1, label="Data Name")
                         input_video = gr.Video(label="Input Video")
                         btn_send_video = gr.Button("Send", variant="primary")
 
                     with gr.Column() as box_source_library:
-                        gr.Markdown("## Step2: Select Sources")
+                        gr.Markdown("## Step2: Select Source")
                         source_gallery = gr.Gallery(
                             self.load_source_videos_for_gallery,
                             label="Source Thumbnails",
@@ -396,7 +396,7 @@ class PieceMaker:
                         )
 
                 with gr.Column() as box_make_tmpl:
-                    gr.Markdown("## Step3: Make Template Frames")
+                    gr.Markdown("## Step3: Make Template Frame")
                     with gr.Row():
                         radio_point_prompt = gr.Radio(
                             label="Point prompt",
