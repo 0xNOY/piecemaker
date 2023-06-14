@@ -327,11 +327,7 @@ class PieceMaker:
 
             cap.release()
 
-            tmpl_mask = np.ndarray(
-                (tmpl_state.mask.shape[0], tmpl_state.mask.shape[1], 3),
-                dtype=np.uint8,
-            )
-            tmpl_mask[:, :, 0] = tmpl_state.mask
+            tmpl_mask = np.array(tmpl_state.mask, dtype=np.uint8) * 255
             tmpl_mask = cv2.resize(
                 tmpl_mask,
                 (frames[0].shape[1], frames[0].shape[0]),
