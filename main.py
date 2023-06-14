@@ -16,11 +16,11 @@ import numpy as np
 
 sys.path.append(str(Path(__file__).parent.absolute() / "track_anything"))
 
-from track_anything.app import (
+from app import (
     download_checkpoint,
     download_checkpoint_from_google_drive,
 )
-from track_anything.track_anything import TrackingAnything
+from track_anything import TrackingAnything
 
 SAM_CHECKPOINT_DICT = {
     "vit_h": {
