@@ -499,48 +499,54 @@ class PieceMaker:
                         gr.Markdown(
                             f"The result will be saved in `{self.dst_piece_dir.absolute()}`."
                         )
-                        slider_max_short_side_size = gr.Slider(
-                            label="Max Short Side Size",
-                            minimum=144,
-                            maximum=1080,
-                            value=480,
-                            step=1,
-                        )
-                        slider_max_fps = gr.Slider(
-                            label="Max FPS", minimum=1, maximum=30, value=6, step=1
-                        )
-                        slider_border_size = gr.Slider(
-                            label="Border Size",
-                            minimum=0,
-                            maximum=100,
-                            value=12,
-                            step=1,
-                        )
-                        slider_mask_dilation_ratio = gr.Slider(
-                            label="Mask Dilation Ratio",
-                            minimum=0,
-                            maximum=32,
-                            value=0,
-                            step=1,
-                        )
 
-                        checkbox_enable_container = gr.Checkbox(
-                            label="Enable Img Container", value=True
-                        )
-                        slider_container_size = gr.Slider(
-                            label="Container Size",
-                            minimum=128,
-                            maximum=1024,
-                            value=244,
-                            step=1,
-                        )
+                        with gr.Column():
+                            slider_max_short_side_size = gr.Slider(
+                                label="Max Short Side Size",
+                                minimum=144,
+                                maximum=1080,
+                                value=480,
+                                step=1,
+                            )
+                            slider_max_fps = gr.Slider(
+                                label="Max FPS", minimum=1, maximum=30, value=6, step=1
+                            )
 
-                        checkbox_remove_background = gr.Checkbox(
-                            label="Remove Background", value=True
-                        )
+                        with gr.Column():
+                            slider_border_size = gr.Slider(
+                                label="Border Size",
+                                minimum=0,
+                                maximum=100,
+                                value=8,
+                                step=1,
+                            )
+                            slider_mask_dilation_ratio = gr.Slider(
+                                label="Mask Dilation Ratio",
+                                minimum=0,
+                                maximum=32,
+                                value=4,
+                                step=1,
+                            )
+                            checkbox_remove_background = gr.Checkbox(
+                                label="Remove Background", value=True
+                            )
+
+                        with gr.Column():
+                            checkbox_enable_container = gr.Checkbox(
+                                label="Enable Img Container", value=True
+                            )
+                            slider_container_size = gr.Slider(
+                                label="Container Size",
+                                minimum=128,
+                                maximum=1024,
+                                value=244,
+                                step=1,
+                            )
+
                         checkbox_sequential_num = gr.Checkbox(
                             label="Sequential numbering of Dirs", value=True
                         )
+
                         btn_make_pieces = gr.Button("Make Pieces", variant="primary")
 
             btn_send_video.click(
