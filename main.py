@@ -63,7 +63,7 @@ def timed_lru_cache(seconds=60, maxsize=128, typed=False):
 
 @timed_lru_cache(seconds=60, maxsize=None)
 def get_first_frame_from_video(path: str) -> cv2.Mat:
-    cap = cv2.VideoCapture(path)
+    cap = cv2.VideoCapture(str(path))
     _, frame = cap.read()
     cap.release()
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
