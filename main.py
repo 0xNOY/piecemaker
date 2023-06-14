@@ -161,6 +161,7 @@ class PieceMaker:
         if not path.exists():
             raise FileNotFoundError(f"Video {path} not found.")
 
+        source_gallery = [(i[0]["name"], i[1]) for i in source_gallery]
         thumbnail = get_first_frame_from_video(path)
         source_gallery.append((thumbnail, name))
 
