@@ -180,6 +180,8 @@ class PieceMaker:
 
             name = path.name.split(".")[0]
 
+            print(f"\ntmpl_names: {tmpl_names}\nname: {name}")
+
             if name in tmpl_names:
                 with open(self.src_tmpl_dir / f"{name}{TMPL_SUFFIX}", "rb") as f:
                     tmpl_state: TemplateFrame = pickle.load(f)
