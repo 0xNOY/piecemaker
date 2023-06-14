@@ -166,7 +166,7 @@ class PieceMaker:
 
         shutil.move(path, self.src_video_dir / f"{name}{path.suffix}")
 
-        return [gr.update(value=None)] * 2, source_gallery
+        return *([gr.update(value=None)] * 2), source_gallery
 
     def load_source_videos_for_gallery(self):
         frames = []
@@ -194,6 +194,8 @@ class PieceMaker:
     def delete_source(self):
         shutil.rmtree(self.src_dir)
         self.src_dir.mkdir()
+        self.src_video_dir.mkdir()
+        self.src_tmpl_dir.mkdir()
         return gr.update(value=None)
 
     def set_tmpl_img(self, srcs, select_data: gr.SelectData):
