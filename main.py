@@ -356,9 +356,8 @@ class PieceMaker:
                     with gr.Column() as box_source_library:
                         gr.Markdown("## Step2: Select Sources")
                         source_gallery = gr.Gallery(
-                            self.load_source_videos_for_gallery,
+                            self.load_source_videos_for_gallery(),
                             label="Source Thumbnails",
-                            every=2,
                         ).style(
                             columns=4,
                             object_fit="scale-down",
