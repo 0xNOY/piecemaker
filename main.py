@@ -291,7 +291,7 @@ class PieceMaker:
                 continue
 
             video_path = self.name2src_video_path(tmpl_state.name)
-            cap = cv2.VideoCapture(video_path)
+            cap = cv2.VideoCapture(str(video_path))
 
             frames = []
             fps = cap.get(cv2.CAP_PROP_FPS)
@@ -420,9 +420,10 @@ class PieceMaker:
                             minimum=144,
                             maximum=1080,
                             value=480,
+                            step=1,
                         )
                         slider_max_fps = gr.Slider(
-                            label="Max FPS", minimum=1, maximum=30, value=10
+                            label="Max FPS", minimum=1, maximum=30, value=10, step=1
                         )
                         checkbox_sequential_num = gr.Checkbox(
                             label="Sequential numbering of Dirs", value=True
