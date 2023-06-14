@@ -235,6 +235,9 @@ class PieceMaker:
         return tmpl_state
 
     def undo_click(self, tmpl_state: TemplateFrame):
+        if len(tmpl_state.clicks[0]) < 2:
+            return tmpl_state, gr.update()
+
         tmpl_state.clicks[0].pop()
         tmpl_state.clicks[1].pop()
 
