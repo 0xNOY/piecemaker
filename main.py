@@ -605,8 +605,9 @@ class PieceMaker:
                 outputs=[queue_gallery, queue],
             )
 
-            checkbox_enable_container.click(
-                lambda: gr.update(visible=checkbox_enable_container.value),
+            checkbox_enable_container.change(
+                lambda checkbox: gr.update(visible=checkbox.value),
+                inputs=[checkbox_enable_container],
                 outputs=[slider_container_size],
             )
 
