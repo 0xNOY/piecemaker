@@ -1,4 +1,5 @@
 import functools
+import os
 import pickle
 import shutil
 import sys
@@ -13,13 +14,10 @@ from typing import List, Optional, Tuple, Union
 import cv2
 import gradio as gr
 import numpy as np
+import requests
 
 sys.path.append(str(Path(__file__).parent.absolute() / "track_anything"))
 
-from app import (
-    download_checkpoint,
-    download_checkpoint_from_google_drive,
-)
 from track_anything import TrackingAnything
 
 SAM_CHECKPOINT_DICT = {
@@ -70,6 +68,23 @@ def get_first_frame_from_video(path: str) -> cv2.Mat:
     cap.release()
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     return frame
+
+
+def download_checkpoint(url, folder, filename):
+    os.makedirs(folder, exist_ok=True)
+    filepath = os.path.join(folder, filename)
+
+    if not os.path.exists(filepath):
+        print("download checkpoints ......")
+        response = requests.get(url, stream=True)
+        with open(filepath, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+
+        print("download successfully!")
+
+    return filepath
 
 
 @dataclass
