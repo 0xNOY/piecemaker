@@ -286,6 +286,10 @@ class PieceMaker:
         max_fps: int,
         remove_background: bool,
         sequential_num: bool,
+        enable_container: bool,
+        container_size: int,
+        border_size: int,
+        mask_dilation_ratio: int,
     ):
         shot_name = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         n = len(queue)
@@ -297,6 +301,10 @@ class PieceMaker:
             f"  max_fps={max_fps}\n"
             f"  remove_background={remove_background}\n"
             f"  sequential_num={sequential_num}\n"
+            f"  enable_container={enable_container}\n"
+            (f"  container_size={container_size}\n" if enable_container else "")
+            f"  border_size={border_size}\n"
+            f"  mask_dilation_ratio={mask_dilation_ratio}\n"
             f"  src_num={n}\n"
             "=========================="
         )
@@ -366,6 +374,13 @@ class PieceMaker:
                 num = str(j).zfill(len_n_frames)
                 piece = frame.copy()
 
+                if mask_dilation_ratio > 0:
+                    kernel = cv2.getStructuringElement(
+                        cv2.MORPH_ELLIPSE,
+                        (mask_dilation_ratio, mask_dilation_ratio),
+                    )
+                    mask = cv2.dilate(mask, kernel, iterations=1)
+
                 if remove_background:
                     piece = cv2.bitwise_and(piece, piece, mask=mask)
 
@@ -382,6 +397,38 @@ class PieceMaker:
                     or piece.shape[1] < 1
                 ):
                     continue
+
+                if enable_container:
+                    long = max(piece.shape[0], piece.shape[1])
+                    scale = container_size / long
+
+                    piece = cv2.resize(
+                        piece,
+                        None,
+                        fx=scale,
+                        fy=scale,
+                        interpolation=cv2.INTER_LANCZOS4,
+                    )
+
+                    container = np.zeros(
+                        (container_size, container_size, 3), dtype=np.uint8
+                    )
+                    container[
+                        (container_size - piece.shape[0]) // 2 : (container_size + piece.shape[0]) // 2,
+                        (container_size - piece.shape[1]) // 2 : (container_size + piece.shape[1]) // 2,
+                    ] = piece
+                    piece = container
+
+                if border_size > 0:
+                    piece = cv2.copyMakeBorder(
+                        piece,
+                        border_size,
+                        border_size,
+                        border_size,
+                        border_size,
+                        cv2.BORDER_CONSTANT,
+                        value=(0, 0, 0),
+                    )
 
                 cv2.imwrite(str(piece_dir / f"{num}.png"), piece)
 
@@ -458,6 +505,28 @@ class PieceMaker:
                         slider_max_fps = gr.Slider(
                             label="Max FPS", minimum=1, maximum=30, value=6, step=1
                         )
+                        slider_border_size = gr.Slider(
+                            label="Border Size", minimum=0, maximum=100, value=12, step=1
+                        )
+                        slider_mask_dilation_ratio = gr.Slider(
+                            label="Mask Dilation Ratio",
+                            minimum=0,
+                            maximum=32,
+                            value=0,
+                            step=1,
+                        )
+                        
+                        checkbox_enable_container = gr.Checkbox(
+                            label="Enable Img Container", value=True
+                        )
+                        slider_container_size = gr.Slider(
+                            label="Container Size",
+                            minimum=128,
+                            maximum=1024,
+                            value=244,
+                            step=1,
+                        )
+
                         checkbox_remove_background = gr.Checkbox(
                             label="Remove Background", value=True
                         )
@@ -520,8 +589,17 @@ class PieceMaker:
                     slider_max_fps,
                     checkbox_remove_background,
                     checkbox_sequential_num,
+                    checkbox_enable_container,
+                    slider_container_size,
+                    slider_border_size,
+                    slider_mask_dilation_ratio,
                 ],
                 outputs=[queue_gallery, queue],
+            )
+
+            checkbox_enable_container.click(
+                lambda: gr.update(visible=checkbox_enable_container.value),
+                outputs=[slider_container_size],
             )
 
         return root
