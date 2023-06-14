@@ -1,0 +1,1 @@
+[日本語のREADME](/docs/README_ja.md)
