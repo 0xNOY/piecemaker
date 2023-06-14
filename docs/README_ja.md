@@ -24,7 +24,7 @@ pip install -U -r requirements.txt
 
 ```sh
 cd ~/piecemaker
-python main.py
+python3 main.py
 ```
 
 `Running on local URL: ...` と表示されたら、ブラウザでそのURLにアクセスする。
