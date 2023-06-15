@@ -265,9 +265,20 @@ class PieceMaker:
 
         return tmpl_state, gr.update(value=tmpl_state.painted_img)
 
-    def add_to_queue(self, tmpl_state: TemplateFrame, queue: List[TemplateFrame]):
+    def add_to_queue(
+        self,
+        tmpl_state: TemplateFrame,
+        queue: List[TemplateFrame],
+        srcs: Tuple[List[dict], List[str]],
+    ):
         with open(self.src_tmpl_dir / f"{tmpl_state.name}{TMPL_SUFFIX}", "wb") as f:
             pickle.dump(tmpl_state, f)
+
+        for i, s in enumerate(srcs):
+            if s[1] == tmpl_state.name:
+                srcs[i] = (tmpl_state.painted_img, tmpl_state.name)
+            else:
+                srcs[i] = (s[0]["name"], s[1])
 
         queue.append(tmpl_state)
 
@@ -275,7 +286,7 @@ class PieceMaker:
         for tmpl_state in queue:
             queue_gallery.append((tmpl_state.painted_img, tmpl_state.name))
 
-        return (gr.update(value=None, label=None), queue, queue_gallery)
+        return (gr.update(value=None, label=None), queue, queue_gallery, srcs)
 
     def make_pieces(
         self,
@@ -559,6 +570,7 @@ class PieceMaker:
                 self.set_tmpl_img,
                 inputs=[source_gallery],
                 outputs=[img_tmpl_preview, tmpl_state, source_gallery],
+                _js="(x,y) => [x.splice(0,x.length),y=x.selectData]",
             )
 
             btn_undo_click.click(
@@ -584,8 +596,8 @@ class PieceMaker:
 
             btn_add_to_queue.click(
                 self.add_to_queue,
-                inputs=[tmpl_state, queue],
-                outputs=[img_tmpl_preview, queue, queue_gallery],
+                inputs=[tmpl_state, queue, source_gallery],
+                outputs=[img_tmpl_preview, queue, queue_gallery, source_gallery],
             )
 
             btn_clear_queue.click(
