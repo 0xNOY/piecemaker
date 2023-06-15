@@ -1,3 +1,4 @@
+import argparse
 import functools
 import os
 import pickle
@@ -632,4 +633,19 @@ class PieceMaker:
 
 
 if __name__ == "__main__":
-    PieceMaker().run()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--server_name", type=str, default=None)
+    parser.add_argument("--share", action="store_true")
+    parser.add_argument("--gpu", type=str, default="cuda:0")
+    parser.add_argument("--data_dir", type=Path, default=Path(__file__).parent / "data")
+    args = parser.parse_args()
+
+    PieceMaker(
+        data_dir=args.data_dir,
+        device=args.gpu,
+    ).run(
+        server_port=args.port,
+        server_name=args.server_name,
+        share=args.share,
+    )
