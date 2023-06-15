@@ -274,8 +274,10 @@ class PieceMaker:
         with open(self.src_tmpl_dir / f"{tmpl_state.name}{TMPL_SUFFIX}", "wb") as f:
             pickle.dump(tmpl_state, f)
 
-        i = srcs[1].index(tmpl_state.name)
-        srcs[0][i] = tmpl_state.painted_img
+        for i, s in enumerate(srcs):
+            if s[1] == tmpl_state.name:
+                srcs[i] = (tmpl_state.painted_img, tmpl_state.name)
+                break
 
         queue.append(tmpl_state)
 
