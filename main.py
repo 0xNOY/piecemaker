@@ -105,10 +105,7 @@ class PieceMaker:
         xmem_checkpoint_name: Optional[str] = None,
         xmem_checkpoint_url: str = "https://github.com/hkchengrex/XMem/releases/download/v1.0/XMem-s012.pth",
         device: str = "cuda:0",
-        port: int = 8080,
     ) -> "PieceMaker":
-        self.port = port
-
         self.data_dir = data_dir
 
         self.src_dir = self.data_dir / "src"
@@ -619,8 +616,19 @@ class PieceMaker:
 
         return root
 
-    def run(self):
-        self.build_ui().launch(server_port=self.port)
+    def run(
+        self,
+        server_port: int = 8080,
+        server_name: Optional[str] = None,
+        share: bool = False,
+    ):
+        self.build_ui().launch(
+            share=share,
+            server_port=server_port,
+            server_name=server_name,
+            show_api=False,
+            favicon_path=str(Path(__file__).parent / "favicon.png"),
+        )
 
 
 if __name__ == "__main__":
