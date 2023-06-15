@@ -1,3 +1,4 @@
+import argparse
 import functools
 import os
 import pickle
@@ -105,10 +106,7 @@ class PieceMaker:
         xmem_checkpoint_name: Optional[str] = None,
         xmem_checkpoint_url: str = "https://github.com/hkchengrex/XMem/releases/download/v1.0/XMem-s012.pth",
         device: str = "cuda:0",
-        port: int = 8080,
     ) -> "PieceMaker":
-        self.port = port
-
         self.data_dir = data_dir
 
         self.src_dir = self.data_dir / "src"
@@ -619,9 +617,35 @@ class PieceMaker:
 
         return root
 
-    def run(self):
-        self.build_ui().launch(server_port=self.port)
+    def run(
+        self,
+        server_port: int = 8080,
+        server_name: Optional[str] = None,
+        share: bool = False,
+    ):
+        self.build_ui().launch(
+            share=share,
+            server_port=server_port,
+            server_name=server_name,
+            show_api=False,
+            favicon_path=str(Path(__file__).parent / "favicon.png"),
+        )
 
 
 if __name__ == "__main__":
-    PieceMaker().run()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--server_name", type=str, default=None)
+    parser.add_argument("--share", action="store_true")
+    parser.add_argument("--gpu", type=str, default="cuda:0")
+    parser.add_argument("--data_dir", type=Path, default=Path(__file__).parent / "data")
+    args = parser.parse_args()
+
+    PieceMaker(
+        data_dir=args.data_dir,
+        device=args.gpu,
+    ).run(
+        server_port=args.port,
+        server_name=args.server_name,
+        share=args.share,
+    )
