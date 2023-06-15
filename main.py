@@ -277,7 +277,8 @@ class PieceMaker:
         for i, s in enumerate(srcs):
             if s[1] == tmpl_state.name:
                 srcs[i] = (tmpl_state.painted_img, tmpl_state.name)
-                break
+            else:
+                srcs[i] = (s[0]["name"], s[1])
 
         queue.append(tmpl_state)
 
