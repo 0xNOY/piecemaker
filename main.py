@@ -234,12 +234,13 @@ class PieceMaker:
 
     def undo_click(self, tmpl_state: TemplateFrame):
         if len(tmpl_state.clicks[0]) < 2:
-            return tmpl_state, gr.update()
+            tmpl_state.clicks = ([], [])
+            tmpl_state.painted_img = tmpl_state.img.copy()
+        else:
+            tmpl_state.clicks[0].pop()
+            tmpl_state.clicks[1].pop()
 
-        tmpl_state.clicks[0].pop()
-        tmpl_state.clicks[1].pop()
-
-        tmpl_state = self._sam_refine(tmpl_state)
+            tmpl_state = self._sam_refine(tmpl_state)
 
         return tmpl_state, gr.update(value=tmpl_state.painted_img)
 
