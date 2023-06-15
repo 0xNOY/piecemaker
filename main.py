@@ -211,7 +211,6 @@ class PieceMaker:
         return (
             gr.update(value=tmpl_img, label=tmpl_name),
             tmpl_state,
-            [(img[0]["name"], img[1]) for img in srcs],
         )
 
     def _sam_refine(
@@ -480,6 +479,7 @@ class PieceMaker:
                         source_gallery = gr.Gallery(
                             self.load_source_videos_for_gallery,
                             label="Source Thumbnails",
+                            allow_preview=False,
                         ).style(
                             columns=4,
                             object_fit="scale-down",
@@ -577,8 +577,7 @@ class PieceMaker:
             source_gallery.select(
                 self.set_tmpl_img,
                 inputs=[source_gallery],
-                outputs=[img_tmpl_preview, tmpl_state, source_gallery],
-                _js="(x,y) => [x.splice(0,x.length),y=x.selectData]",
+                outputs=[img_tmpl_preview, tmpl_state],
             )
 
             btn_undo_click.click(
