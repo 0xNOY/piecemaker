@@ -277,7 +277,7 @@ class PieceMaker:
         srcs: Tuple[List[dict], List[str]],
     ):
         if tmpl_state.mask is None:
-            raise gr.Error("You must make a template frame before adding to the queue.")
+            return gr.update(), queue, gr.update(), gr.update()
 
         with open(self.src_tmpl_dir / f"{tmpl_state.name}{TMPL_SUFFIX}", "wb") as f:
             pickle.dump(tmpl_state, f)
