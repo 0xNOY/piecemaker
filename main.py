@@ -234,8 +234,12 @@ class PieceMaker:
 
     def undo_click(self, tmpl_state: TemplateFrame):
         if len(tmpl_state.clicks[0]) < 2:
-            tmpl_state.clicks = ([], [])
-            tmpl_state.painted_img = tmpl_state.img.copy()
+            tmpl_state = TemplateFrame(
+                tmpl_state.name,
+                ([], []),
+                tmpl_state.img,
+                painted_img=tmpl_state.img.copy(),
+            )
         else:
             tmpl_state.clicks[0].pop()
             tmpl_state.clicks[1].pop()
@@ -272,6 +276,9 @@ class PieceMaker:
         queue: List[TemplateFrame],
         srcs: Tuple[List[dict], List[str]],
     ):
+        if tmpl_state.mask is None:
+            raise gr.Error("You must make a template frame before adding to the queue.")
+
         with open(self.src_tmpl_dir / f"{tmpl_state.name}{TMPL_SUFFIX}", "wb") as f:
             pickle.dump(tmpl_state, f)
 
