@@ -146,14 +146,12 @@ class PieceMaker:
             devices = [devices]
 
         with Pool(len(devices)) as p:
-            self.track_anything = p.map(
-                lambda d: TrackingAnything(
-                    sam_checkpoint_path,
-                    xmem_checkpoint_path,
-                    d,
-                    sam_model_type,
+            self.track_anything = p.starmap(
+                TrackingAnything,
+                (
+                    (sam_checkpoint_path, xmem_checkpoint_path, device, sam_model_type)
+                    for device in devices
                 ),
-                devices
             )
 
     def name2src_video_path(self, name: str) -> Path:
