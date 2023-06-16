@@ -225,10 +225,10 @@ class PieceMaker:
         self,
         tmpl_state: TemplateFrame,
     ):
-        self.track_anything.samcontroler.sam_controler.reset_image()
-        self.track_anything.samcontroler.sam_controler.set_image(tmpl_state.img)
+        self.track_anything[0].samcontroler.sam_controler.reset_image()
+        self.track_anything[0].samcontroler.sam_controler.set_image(tmpl_state.img)
 
-        mask, _, painted_img = self.track_anything.first_frame_click(
+        mask, _, painted_img = self.track_anything[0].first_frame_click(
             tmpl_state.img,
             np.array(tmpl_state.clicks[0]),
             np.array(tmpl_state.clicks[1]),
