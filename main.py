@@ -4,10 +4,12 @@ import os
 import pickle
 import shutil
 import sys
+from time import sleep
 from base64 import b32encode
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from hashlib import sha256
+from multiprocessing import Pool, Array, Lock
 from pathlib import Path
 from threading import Lock
 from typing import List, Optional, Tuple, Union
@@ -105,7 +107,7 @@ class PieceMaker:
         sam_model_type: str = "vit_h",
         xmem_checkpoint_name: Optional[str] = None,
         xmem_checkpoint_url: str = "https://github.com/hkchengrex/XMem/releases/download/v1.0/XMem-s012.pth",
-        device: str = "cuda:0",
+        devices: Union[str, List[str]] = "cuda:0",
     ) -> "PieceMaker":
         self.data_dir = data_dir
 
@@ -140,12 +142,18 @@ class PieceMaker:
             xmem_checkpoint_url, checkpoints_dir, xmem_checkpoint_name
         )
 
-        self.track_anything = TrackingAnything(
-            sam_checkpoint_path,
-            xmem_checkpoint_path,
-            device,
-            sam_model_type,
-        )
+        if type(devices) == str:
+            devices = [devices]
+
+        self.track_anything = [
+            TrackingAnything(
+                sam_checkpoint_path,
+                xmem_checkpoint_path,
+                d,
+                sam_model_type,
+            )
+            for d in devices
+        ]
 
     def name2src_video_path(self, name: str) -> Path:
         for f in self.src_video_dir.glob(f"{name}.*"):
@@ -295,6 +303,166 @@ class PieceMaker:
 
         return (gr.update(value=None, label=None), queue, queue_gallery, srcs)
 
+    def _make_pieces(
+        self,
+        shot_name: str,
+        i: int,
+        tmpl_state: TemplateFrame,
+        gpu_states: Array,
+        gpu_states_lock: Lock,
+        max_short_side_size: int,
+        max_fps: int,
+        remove_background: bool,
+        sequential_num: bool,
+        enable_container: bool,
+        container_size: int,
+        border_size: int,
+        mask_dilation_ratio: int,
+    ):
+        print(f"Making Pieces of {tmpl_state.name} ({i})")
+
+        if tmpl_state.mask is None:
+            return
+
+        video_path = self.name2src_video_path(tmpl_state.name)
+        cap = cv2.VideoCapture(str(video_path))
+
+        frames = []
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        max_fps = min(max_fps, fps)
+        fps_ratio = int(fps / max_fps)
+        height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+        short_side = min(height, width)
+        max_short_side_size = min(max_short_side_size, short_side)
+        scale = max_short_side_size / short_side
+        j = -1
+
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            j += 1
+            if j % fps_ratio != 0:
+                continue
+
+            if scale != 1:
+                frame = cv2.resize(
+                    frame,
+                    None,
+                    fx=scale,
+                    fy=scale,
+                    interpolation=cv2.INTER_LANCZOS4,
+                )
+
+            frames.append(frame)
+
+        cap.release()
+
+        tmpl_mask = np.array(tmpl_state.mask, dtype=np.uint8) * 255
+        tmpl_mask = cv2.resize(
+            tmpl_mask,
+            (frames[0].shape[1], frames[0].shape[0]),
+            interpolation=cv2.INTER_NEAREST,
+        )
+
+        available_gpu_index = -1
+        gpu_states_lock.acquire()
+        while True:
+            try:
+                available_gpu_index = gpu_states.index(0)
+                gpu_states[available_gpu_index] = 1
+                break
+            except ValueError:
+                pass
+            sleep(0.0001)
+        gpu_states_lock.release()
+
+        print(f"{tmpl_state.name} is using tracker:{available_gpu_index}.")
+
+        self.track_anything[available_gpu_index].xmem.clear_memory()
+        masks, _, _ = self.track_anything[available_gpu_index].generator(
+            frames, tmpl_mask
+        )
+
+        gpu_states[available_gpu_index] = 0
+
+        data_name = tmpl_state.name
+        if sequential_num:
+            num = str(i).zfill(len(str(n)))
+            data_name = f"{num}_{data_name}"
+
+        piece_dir = self.dst_piece_dir / shot_name / data_name
+        piece_dir.mkdir(exist_ok=True, parents=True)
+
+        len_n_frames = len(str(len(frames)))
+        for j, (frame, mask) in enumerate(zip(frames, masks)):
+            num = str(j).zfill(len_n_frames)
+            piece = frame.copy()
+
+            if mask_dilation_ratio > 0:
+                kernel = cv2.getStructuringElement(
+                    cv2.MORPH_ELLIPSE,
+                    (mask_dilation_ratio, mask_dilation_ratio),
+                )
+                mask = cv2.dilate(mask, kernel, iterations=1)
+
+            if remove_background:
+                piece = cv2.bitwise_and(piece, piece, mask=mask)
+
+            bound_rect = cv2.boundingRect(mask)
+            piece = piece[
+                bound_rect[1] : bound_rect[1] + bound_rect[3],
+                bound_rect[0] : bound_rect[0] + bound_rect[2],
+            ]
+
+            if (
+                piece is None
+                or len(piece) < 1
+                or piece.shape[0] < 1
+                or piece.shape[1] < 1
+            ):
+                continue
+
+            if enable_container:
+                long = max(piece.shape[0], piece.shape[1])
+                scale = container_size / long
+
+                piece = cv2.resize(
+                    piece,
+                    None,
+                    fx=scale,
+                    fy=scale,
+                    interpolation=cv2.INTER_LANCZOS4,
+                )
+
+                container = np.zeros(
+                    (container_size, container_size, 3), dtype=np.uint8
+                )
+                container[
+                    (container_size - piece.shape[0])
+                    // 2 : (container_size + piece.shape[0])
+                    // 2,
+                    (container_size - piece.shape[1])
+                    // 2 : (container_size + piece.shape[1])
+                    // 2,
+                ] = piece
+                piece = container
+
+            if border_size > 0:
+                piece = cv2.copyMakeBorder(
+                    piece,
+                    border_size,
+                    border_size,
+                    border_size,
+                    border_size,
+                    cv2.BORDER_CONSTANT,
+                    value=(0, 0, 0),
+                )
+
+            cv2.imwrite(str(piece_dir / f"{num}.png"), piece)
+
     def make_pieces(
         self,
         queue: List[TemplateFrame],
@@ -325,132 +493,30 @@ class PieceMaker:
             "=========================="
         )
 
-        for i, tmpl_state in enumerate(queue):
-            print(f"Making Pieces of {tmpl_state.name} ({i+1}/{n})")
-
-            if tmpl_state.mask is None:
-                continue
-
-            video_path = self.name2src_video_path(tmpl_state.name)
-            cap = cv2.VideoCapture(str(video_path))
-
-            frames = []
-            fps = cap.get(cv2.CAP_PROP_FPS)
-            max_fps = min(max_fps, fps)
-            fps_ratio = int(fps / max_fps)
-            height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-            width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-            short_side = min(height, width)
-            max_short_side_size = min(max_short_side_size, short_side)
-            scale = max_short_side_size / short_side
-            j = -1
-
-            while cap.isOpened():
-                ret, frame = cap.read()
-                if not ret:
-                    break
-
-                j += 1
-                if j % fps_ratio != 0:
-                    continue
-
-                if scale != 1:
-                    frame = cv2.resize(
-                        frame,
-                        None,
-                        fx=scale,
-                        fy=scale,
-                        interpolation=cv2.INTER_LANCZOS4,
+        with Pool(len(self.track_anything)) as p:
+            gpu_states = Array("b", [0] * len(self.track_anything))
+            gpu_states_lock = Lock()
+            p.starmap(
+                self._make_pieces,
+                (
+                    (
+                        shot_name,
+                        i,
+                        tmpl_state,
+                        gpu_states,
+                        gpu_states_lock,
+                        max_short_side_size,
+                        max_fps,
+                        remove_background,
+                        sequential_num,
+                        enable_container,
+                        container_size,
+                        border_size,
+                        mask_dilation_ratio,
                     )
-
-                frames.append(frame)
-
-            cap.release()
-
-            tmpl_mask = np.array(tmpl_state.mask, dtype=np.uint8) * 255
-            tmpl_mask = cv2.resize(
-                tmpl_mask,
-                (frames[0].shape[1], frames[0].shape[0]),
-                interpolation=cv2.INTER_NEAREST,
+                    for i, tmpl_state in enumerate(queue)
+                ),
             )
-
-            self.track_anything.xmem.clear_memory()
-            masks, _, _ = self.track_anything.generator(frames, tmpl_mask)
-
-            data_name = tmpl_state.name
-            if sequential_num:
-                num = str(i).zfill(len(str(n)))
-                data_name = f"{num}_{data_name}"
-
-            piece_dir = self.dst_piece_dir / shot_name / data_name
-            piece_dir.mkdir(exist_ok=True, parents=True)
-
-            len_n_frames = len(str(len(frames)))
-            for j, (frame, mask) in enumerate(zip(frames, masks)):
-                num = str(j).zfill(len_n_frames)
-                piece = frame.copy()
-
-                if mask_dilation_ratio > 0:
-                    kernel = cv2.getStructuringElement(
-                        cv2.MORPH_ELLIPSE,
-                        (mask_dilation_ratio, mask_dilation_ratio),
-                    )
-                    mask = cv2.dilate(mask, kernel, iterations=1)
-
-                if remove_background:
-                    piece = cv2.bitwise_and(piece, piece, mask=mask)
-
-                bound_rect = cv2.boundingRect(mask)
-                piece = piece[
-                    bound_rect[1] : bound_rect[1] + bound_rect[3],
-                    bound_rect[0] : bound_rect[0] + bound_rect[2],
-                ]
-
-                if (
-                    piece is None
-                    or len(piece) < 1
-                    or piece.shape[0] < 1
-                    or piece.shape[1] < 1
-                ):
-                    continue
-
-                if enable_container:
-                    long = max(piece.shape[0], piece.shape[1])
-                    scale = container_size / long
-
-                    piece = cv2.resize(
-                        piece,
-                        None,
-                        fx=scale,
-                        fy=scale,
-                        interpolation=cv2.INTER_LANCZOS4,
-                    )
-
-                    container = np.zeros(
-                        (container_size, container_size, 3), dtype=np.uint8
-                    )
-                    container[
-                        (container_size - piece.shape[0])
-                        // 2 : (container_size + piece.shape[0])
-                        // 2,
-                        (container_size - piece.shape[1])
-                        // 2 : (container_size + piece.shape[1])
-                        // 2,
-                    ] = piece
-                    piece = container
-
-                if border_size > 0:
-                    piece = cv2.copyMakeBorder(
-                        piece,
-                        border_size,
-                        border_size,
-                        border_size,
-                        border_size,
-                        cv2.BORDER_CONSTANT,
-                        value=(0, 0, 0),
-                    )
-
-                cv2.imwrite(str(piece_dir / f"{num}.png"), piece)
 
         return gr.update(value=None), []
 
@@ -656,13 +722,13 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--server_name", type=str, default=None)
     parser.add_argument("--share", action="store_true")
-    parser.add_argument("--gpu", type=str, default="cuda:0")
+    parser.add_argument("--gpus", type=str, nargs="*", default=["cuda:0"])
     parser.add_argument("--data_dir", type=Path, default=Path(__file__).parent / "data")
     args = parser.parse_args()
 
     PieceMaker(
         data_dir=args.data_dir,
-        device=args.gpu,
+        devices=args.gpus,
     ).run(
         server_port=args.port,
         server_name=args.server_name,
