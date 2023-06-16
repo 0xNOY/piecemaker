@@ -145,15 +145,16 @@ class PieceMaker:
         if type(devices) == str:
             devices = [devices]
 
-        self.track_anything = [
-            TrackingAnything(
-                sam_checkpoint_path,
-                xmem_checkpoint_path,
-                d,
-                sam_model_type,
+        with Pool(len(devices)) as p:
+            self.track_anything = p.map(
+                lambda d: TrackingAnything(
+                    sam_checkpoint_path,
+                    xmem_checkpoint_path,
+                    d,
+                    sam_model_type,
+                ),
+                devices
             )
-            for d in devices
-        ]
 
     def name2src_video_path(self, name: str) -> Path:
         for f in self.src_video_dir.glob(f"{name}.*"):
