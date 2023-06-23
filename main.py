@@ -308,7 +308,7 @@ class PieceMaker:
         border_size: int,
         mask_dilation_ratio: int,
     ):
-        shot_name = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        shot_name = datetime.now().strftime("%Y.%m.%d_%H:%M:%S_%f")
         n = len(queue)
 
         print(
