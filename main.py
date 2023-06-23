@@ -681,8 +681,13 @@ class PieceMaker:
 
 
 def command_make_pieces(args):
+    pm = PieceMaker(
+        data_dir=args.data_dir,
+        device=args.gpu,
+    )
+
     tmpl_paths = [
-        tmpl for tmpl in args.src_tmpl_dir.glob(f"*{TMPL_SUFFIX}") if tmpl.is_file()
+        tmpl for tmpl in pm.src_tmpl_dir.glob(f"*{TMPL_SUFFIX}") if tmpl.is_file()
     ]
     tmpls = []
 
@@ -690,11 +695,6 @@ def command_make_pieces(args):
         with open(tmpl_path, "rb") as f:
             tmpl_state: TemplateFrame = pickle.load(f)
             tmpls.append(tmpl_state)
-
-    pm = PieceMaker(
-        data_dir=args.data_dir,
-        device=args.gpu,
-    )
 
     pm.make_pieces(
         tmpls,
@@ -706,7 +706,7 @@ def command_make_pieces(args):
         container_size=args.container_size,
         border_size=args.border_size,
         mask_dilation_ratio=args.mask_dilation_ratio,
-        fill_color=args.fill_color,
+        fill_color=tuple(args.fill_color),
     )
 
 
