@@ -307,6 +307,7 @@ class PieceMaker:
         container_size: int,
         border_size: int,
         mask_dilation_ratio: int,
+        fill_color: Tuple[int, int, int] = (0, 0, 0),
     ):
         shot_name = datetime.now().strftime("%Y.%m.%d_%H:%M:%S_%f")
         n = len(queue)
@@ -399,7 +400,7 @@ class PieceMaker:
                     mask = cv2.dilate(mask, kernel, iterations=1)
 
                 if remove_background:
-                    piece = cv2.bitwise_and(piece, piece, mask=mask)
+                    piece[mask == 0] = fill_color
 
                 bound_rect = cv2.boundingRect(mask)
                 piece = piece[
@@ -427,8 +428,8 @@ class PieceMaker:
                         interpolation=cv2.INTER_LANCZOS4,
                     )
 
-                    container = np.zeros(
-                        (container_size, container_size, 3), dtype=np.uint8
+                    container = np.full(
+                        (container_size, container_size, 3), fill_color, dtype=np.uint8
                     )
                     container[
                         (container_size - piece.shape[0])
@@ -448,7 +449,7 @@ class PieceMaker:
                         border_size,
                         border_size,
                         cv2.BORDER_CONSTANT,
-                        value=(0, 0, 0),
+                        value=fill_color,
                     )
 
                 cv2.imwrite(str(piece_dir / f"{num}.png"), piece)
@@ -679,20 +680,79 @@ class PieceMaker:
         )
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=8080)
-    parser.add_argument("--server_name", type=str, default=None)
-    parser.add_argument("--share", action="store_true")
-    parser.add_argument("--gpu", type=str, default="cuda:0")
-    parser.add_argument("--data_dir", type=Path, default=Path(__file__).parent / "data")
-    args = parser.parse_args()
+def command_make_pieces(args):
+    tmpl_paths = [
+        tmpl for tmpl in args.src_tmpl_dir.glob(f"*{TMPL_SUFFIX}") if tmpl.is_file()
+    ]
+    tmpls = []
 
-    PieceMaker(
+    for tmpl_path in tmpl_paths:
+        with open(tmpl_path, "rb") as f:
+            tmpl_state: TemplateFrame = pickle.load(f)
+            tmpls.append(tmpl_state)
+
+    pm = PieceMaker(
         data_dir=args.data_dir,
         device=args.gpu,
-    ).run(
+    )
+
+    pm.make_pieces(
+        tmpls,
+        max_short_side_size=args.max_short_side_size,
+        max_fps=args.max_fps,
+        remove_background=args.leave_background,
+        sequential_num=args.sequential_num,
+        enable_container=args.container_size > 0,
+        container_size=args.container_size,
+        border_size=args.border_size,
+        mask_dilation_ratio=args.mask_dilation_ratio,
+        fill_color=args.fill_color,
+    )
+
+
+def command_gradio(args):
+    pm = PieceMaker(
+        data_dir=args.data_dir,
+        device=args.gpu,
+    )
+
+    pm.run(
         server_port=args.port,
         server_name=args.server_name,
         share=args.share,
     )
+
+
+if __name__ == "__main__":
+    root_parser = argparse.ArgumentParser()
+    subparsers = root_parser.add_subparsers(dest="subcommand")
+    root_parser.add_argument("--gpu", type=str, default="cuda:0")
+    root_parser.add_argument(
+        "--data_dir", type=Path, default=Path(__file__).parent / "data"
+    )
+
+    gradio_parser = subparsers.add_parser("gradio")
+    gradio_parser.add_argument("--port", type=int, default=8080)
+    gradio_parser.add_argument("--server_name", type=str, default=None)
+    gradio_parser.add_argument("--share", action="store_true")
+    gradio_parser.set_defaults(func=command_gradio)
+
+    make_pieces_parser = subparsers.add_parser("make_pieces")
+    make_pieces_parser.add_argument("--max-short-side-size", type=int, default=480)
+    make_pieces_parser.add_argument("--max-fps", type=int, default=6)
+    make_pieces_parser.add_argument("--leave-background", action="store_false")
+    make_pieces_parser.add_argument("--sequential-num", action="store_true")
+    make_pieces_parser.add_argument("--container-size", type=int, default=244)
+    make_pieces_parser.add_argument("--border-size", type=int, default=8)
+    make_pieces_parser.add_argument("--mask-dilation-ratio", type=int, default=4)
+    make_pieces_parser.add_argument(
+        "--fill-color", type=int, nargs=3, default=(0, 0, 0)
+    )
+    make_pieces_parser.set_defaults(func=command_make_pieces)
+
+    args = root_parser.parse_args()
+
+    if hasattr(args, "func"):
+        args.func(args)
+    else:
+        root_parser.print_help()
