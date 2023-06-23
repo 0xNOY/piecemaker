@@ -467,10 +467,10 @@ class PieceMaker:
     def load_result_files(self):
         files = []
         for path in self.dst_piece_dir.glob("*.zip"):
-            if not path.is_dir():
+            if path.is_dir():
                 continue
 
-            files.append((path, path.name))
+            files.append(str(path))
 
         return files
 
