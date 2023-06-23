@@ -458,9 +458,9 @@ class PieceMaker:
             "w",
             compression=ZIP_DEFLATED,
             compresslevel=1,
-        ) as zip:
+        ) as archive:
             for path in self.dst_piece_dir.glob(f"{shot_name}/*/*"):
-                zip.write(path, arcname=path.relative_to(self.dst_piece_dir))
+                archive.write(path, arcname=path.relative_to(self.dst_piece_dir))
 
         return gr.update(value=None), [], self.load_result_files()
 
