@@ -728,12 +728,12 @@ if __name__ == "__main__":
     subparsers = root_parser.add_subparsers(dest="subcommand")
     root_parser.add_argument("--gpu", type=str, default="cuda:0")
     root_parser.add_argument(
-        "--data_dir", type=Path, default=Path(__file__).parent / "data"
+        "--data-dir", type=Path, default=Path(__file__).parent / "data"
     )
 
     gradio_parser = subparsers.add_parser("gradio")
     gradio_parser.add_argument("--port", type=int, default=8080)
-    gradio_parser.add_argument("--server_name", type=str, default=None)
+    gradio_parser.add_argument("--server-name", type=str, default=None)
     gradio_parser.add_argument("--share", action="store_true")
     gradio_parser.set_defaults(func=command_gradio)
 
