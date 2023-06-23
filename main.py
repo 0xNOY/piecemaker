@@ -4,6 +4,7 @@ import os
 import pickle
 import shutil
 import sys
+from zipfile import ZipFile, ZIP_DEFLATED
 from base64 import b32encode
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -13,6 +14,7 @@ from threading import Lock
 from typing import List, Optional, Tuple, Union
 
 import cv2
+import lzo
 import gradio as gr
 import numpy as np
 import requests
@@ -452,7 +454,26 @@ class PieceMaker:
 
                 cv2.imwrite(str(piece_dir / f"{num}.png"), piece)
 
-        return gr.update(value=None), []
+        with ZipFile(
+            self.dst_piece_dir / f"{shot_name}.zip",
+            "w",
+            compression=ZIP_DEFLATED,
+            compresslevel=1,
+        ) as zip:
+            for path in self.dst_piece_dir.glob(f"{shot_name}/*/*"):
+                zip.write(path, arcname=path.relative_to(self.dst_piece_dir))
+
+        return gr.update(value=None), [], self.load_result_files()
+
+    def load_result_files(self):
+        files = []
+        for path in self.dst_piece_dir.glob("*.zip"):
+            if not path.is_dir():
+                continue
+
+            files.append((path, path.name))
+
+        return files
 
     def build_ui(self):
         with gr.Blocks(title="PieceMaker") as root:
@@ -566,6 +587,14 @@ class PieceMaker:
 
                         btn_make_pieces = gr.Button("Make Pieces", variant="primary")
 
+                with gr.Column() as box_result:
+                    gr.Markdown("## Result")
+                    result_files = gr.File(
+                        value=self.load_result_files,
+                        label="Result Files",
+                        interactive=False,
+                    )
+
             btn_send_video.click(
                 self.store_video,
                 [data_name, input_video, source_gallery],
@@ -625,7 +654,7 @@ class PieceMaker:
                     slider_border_size,
                     slider_mask_dilation_ratio,
                 ],
-                outputs=[queue_gallery, queue],
+                outputs=[queue_gallery, queue, result_files],
             )
 
             checkbox_enable_container.change(
