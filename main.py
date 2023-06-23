@@ -14,7 +14,6 @@ from threading import Lock
 from typing import List, Optional, Tuple, Union
 
 import cv2
-import lzo
 import gradio as gr
 import numpy as np
 import requests
