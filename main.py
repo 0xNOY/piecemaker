@@ -89,6 +89,11 @@ def download_checkpoint(url, folder, filename):
     return filepath
 
 
+def hex_to_rgb(h: str):
+    h = h.lstrip("#")
+    return tuple(int(h[i : i + 2], 16) for i in (0, 2, 4))
+
+
 @dataclass
 class TemplateFrame:
     name: str
@@ -307,10 +312,13 @@ class PieceMaker:
         container_size: int,
         border_size: int,
         mask_dilation_ratio: int,
-        fill_color: Tuple[int, int, int] = (0, 0, 0),
+        fill_color: Union[Tuple[int, int, int], str] = (0, 0, 0),
     ):
         shot_name = datetime.now().strftime("%Y.%m.%d_%H:%M:%S_%f")
         n = len(queue)
+
+        if isinstance(fill_color, str):
+            fill_color = hex_to_rgb(fill_color)
 
         print(
             "==========================\n"
@@ -323,6 +331,7 @@ class PieceMaker:
             f"  container_size={container_size}\n"
             f"  border_size={border_size}\n"
             f"  mask_dilation_ratio={mask_dilation_ratio}\n"
+            f"  fill_color={fill_color}\n"
             f"  src_num={n}\n"
             "=========================="
         )
@@ -569,6 +578,12 @@ class PieceMaker:
                                 label="Remove Background", value=True
                             )
 
+                            with gr.Row():
+                                gr.Markdown("Fill Color")
+                                fill_color_picker = gr.ColorPicker(
+                                    value="#000000", container=False, show_label=False
+                                )
+
                         with gr.Column():
                             checkbox_enable_container = gr.Checkbox(
                                 label="Enable Img Container", value=True
@@ -653,6 +668,7 @@ class PieceMaker:
                     slider_container_size,
                     slider_border_size,
                     slider_mask_dilation_ratio,
+                    fill_color_picker,
                 ],
                 outputs=[queue_gallery, queue, result_files],
             )
