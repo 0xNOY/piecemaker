@@ -716,9 +716,7 @@ class PieceMaker:
 
 def command_make_pieces(args):
     pm = PieceMaker(
-        data_dir=args.data_dir,
-        device=args.gpu,
-        should_fix_tmpl_name=args.fix_tmpl_name
+        data_dir=args.data_dir, device=args.gpu, should_fix_tmpl_name=args.fix_tmpl_name
     )
 
     tmpl_paths = [
@@ -728,8 +726,13 @@ def command_make_pieces(args):
 
     for tmpl_path in tmpl_paths:
         with open(tmpl_path, "rb") as f:
-            tmpl_state: TemplateFrame = pickle.load(f)
-            tmpls.append(tmpl_state)
+            tmpl: TemplateFrame = pickle.load(f)
+        try:
+            pm.name2src_video_path(tmpl.name)
+        except FileNotFoundError:
+            print(f"No video files matching template file '{tmpl.name}' found.")
+        else:
+            tmpls.append(tmpl)
 
     pm.make_pieces(
         tmpls,
@@ -747,9 +750,7 @@ def command_make_pieces(args):
 
 def command_gradio(args):
     pm = PieceMaker(
-        data_dir=args.data_dir,
-        device=args.gpu,
-        should_fix_tmpl_name=args.fix_tmpl_name
+        data_dir=args.data_dir, device=args.gpu, should_fix_tmpl_name=args.fix_tmpl_name
     )
 
     pm.run(
