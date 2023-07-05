@@ -112,6 +112,7 @@ class PieceMaker:
         xmem_checkpoint_name: Optional[str] = None,
         xmem_checkpoint_url: str = "https://github.com/hkchengrex/XMem/releases/download/v1.0/XMem-s012.pth",
         device: str = "cuda:0",
+        should_fix_tmpl_name=False,
     ) -> "PieceMaker":
         self.data_dir = data_dir
 
@@ -153,12 +154,29 @@ class PieceMaker:
             sam_model_type,
         )
 
+        if should_fix_tmpl_name:
+            self.fix_tmpl_name()
+
     def name2src_video_path(self, name: str) -> Path:
         for f in self.src_video_dir.glob(f"{name}.*"):
             if f.suffix in VIDEO_SUFFIX:
                 return f
 
         raise FileNotFoundError(f"Video {name} not found.")
+
+    def fix_tmpl_name(self):
+        tmpl_paths = (
+            tmpl for tmpl in self.src_tmpl_dir.glob(f"*{TMPL_SUFFIX}") if tmpl.is_file()
+        )
+
+        for p in tmpl_paths:
+            with open(p, "rb") as f:
+                tmpl: TemplateFrame = pickle.load(f)
+
+            tmpl.name = p.name.split(".")[0]
+
+            with open(p, "wb") as f:
+                pickle.dump(tmpl, f)
 
     def store_video(self, name: str, path: Union[str, Path], source_gallery):
         path = Path(path)
@@ -700,6 +718,7 @@ def command_make_pieces(args):
     pm = PieceMaker(
         data_dir=args.data_dir,
         device=args.gpu,
+        should_fix_tmpl_name=args.fix_tmpl_name
     )
 
     tmpl_paths = [
@@ -730,6 +749,7 @@ def command_gradio(args):
     pm = PieceMaker(
         data_dir=args.data_dir,
         device=args.gpu,
+        should_fix_tmpl_name=args.fix_tmpl_name
     )
 
     pm.run(
@@ -746,6 +766,7 @@ if __name__ == "__main__":
     root_parser.add_argument(
         "--data-dir", type=Path, default=Path(__file__).parent / "data"
     )
+    root_parser.add_argument("--fix-tmpl-name", action="store_true")
 
     gradio_parser = subparsers.add_parser("gradio")
     gradio_parser.add_argument("--port", type=int, default=8080)
