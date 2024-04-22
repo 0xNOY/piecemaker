@@ -1,0 +1,14 @@
+services:
+  piecemaker:
+    image: piecemaker:latest
+    build: ./
+    network_mode: host
+    volumes:
+      - type: bind
+        source: ./
+        target: /app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [ gpu ]
