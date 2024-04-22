@@ -37,7 +37,7 @@ SAM_CHECKPOINT_DICT = {
     },
 }
 
-VIDEO_SUFFIX = {".mp4", ".mov", ".MP4", ".MOV"}
+VIDEO_SUFFIX = {".mp4", ".mov"}
 
 TMPL_SUFFIX = ".tmpl.pkl"
 
@@ -159,7 +159,7 @@ class PieceMaker:
 
     def name2src_video_path(self, name: str) -> Path:
         for f in self.src_video_dir.glob(f"{name}.*"):
-            if f.suffix in VIDEO_SUFFIX:
+            if f.suffix.lower() in VIDEO_SUFFIX:
                 return f
 
         raise FileNotFoundError(f"Video {name} not found.")
@@ -198,7 +198,7 @@ class PieceMaker:
             for path in self.src_tmpl_dir.glob(f"*{TMPL_SUFFIX}")
         )
         for path in self.src_video_dir.glob("*"):
-            if not path.suffix in VIDEO_SUFFIX:
+            if not path.suffix.lower() in VIDEO_SUFFIX:
                 continue
 
             name = path.name.split(".")[0]
