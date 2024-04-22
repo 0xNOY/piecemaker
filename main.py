@@ -331,6 +331,7 @@ class PieceMaker:
         border_size: int,
         mask_dilation_ratio: int,
         fill_color: Union[Tuple[int, int, int], str] = (0, 0, 0),
+        save_mask: bool = False,
     ):
         shot_name = datetime.now().strftime("%Y.%m.%d_%H:%M:%S_%f")
         n = len(queue)
@@ -429,11 +430,12 @@ class PieceMaker:
                 if remove_background:
                     piece[mask == 0] = fill_color
 
-                bound_rect = cv2.boundingRect(mask)
-                piece = piece[
-                    bound_rect[1] : bound_rect[1] + bound_rect[3],
-                    bound_rect[0] : bound_rect[0] + bound_rect[2],
-                ]
+                if not save_mask:
+                    bound_rect = cv2.boundingRect(mask)
+                    piece = piece[
+                        bound_rect[1] : bound_rect[1] + bound_rect[3],
+                        bound_rect[0] : bound_rect[0] + bound_rect[2],
+                    ]
 
                 if (
                     piece is None
@@ -480,6 +482,8 @@ class PieceMaker:
                     )
 
                 cv2.imwrite(str(piece_dir / f"{num}.png"), piece)
+                if save_mask:
+                    cv2.imwrite(str(piece_dir / f"{num}.mask.png"), mask)
 
         with ZipFile(
             self.dst_piece_dir / f"{shot_name}.zip",
@@ -570,30 +574,30 @@ class PieceMaker:
                                 label="Max Short Side Size",
                                 minimum=144,
                                 maximum=1080,
-                                value=480,
+                                value=720,
                                 step=1,
                             )
                             slider_max_fps = gr.Slider(
-                                label="Max FPS", minimum=1, maximum=30, value=6, step=1
+                                label="Max FPS", minimum=1, maximum=30, value=2, step=1
                             )
 
                         with gr.Column():
                             slider_border_size = gr.Slider(
                                 label="Border Size",
                                 minimum=0,
-                                maximum=100,
-                                value=8,
+                                maximum=128,
+                                value=0,
                                 step=1,
                             )
                             slider_mask_dilation_ratio = gr.Slider(
                                 label="Mask Dilation Ratio",
                                 minimum=0,
-                                maximum=32,
+                                maximum=64,
                                 value=4,
                                 step=1,
                             )
                             checkbox_remove_background = gr.Checkbox(
-                                label="Remove Background", value=True
+                                label="Remove Background", value=False
                             )
 
                             with gr.Row():
@@ -604,7 +608,7 @@ class PieceMaker:
 
                         with gr.Column():
                             checkbox_enable_container = gr.Checkbox(
-                                label="Enable Img Container", value=True
+                                label="Enable Img Container", value=False
                             )
                             slider_container_size = gr.Slider(
                                 label="Container Size",
@@ -612,6 +616,11 @@ class PieceMaker:
                                 maximum=1024,
                                 value=244,
                                 step=1,
+                            )
+
+                        with gr.Column():
+                            checkbox_save_mask = gr.Checkbox(
+                                label="Save Mask", value=True
                             )
 
                         checkbox_sequential_num = gr.Checkbox(
@@ -687,6 +696,7 @@ class PieceMaker:
                     slider_border_size,
                     slider_mask_dilation_ratio,
                     fill_color_picker,
+                    checkbox_save_mask,
                 ],
                 outputs=[queue_gallery, queue, result_files],
             )
@@ -745,6 +755,7 @@ def command_make_pieces(args):
         border_size=args.border_size,
         mask_dilation_ratio=args.mask_dilation_ratio,
         fill_color=tuple(args.fill_color),
+        save_mask=not args.dont_save_mask,
     )
 
 
@@ -776,16 +787,17 @@ if __name__ == "__main__":
     gradio_parser.set_defaults(func=command_gradio)
 
     make_pieces_parser = subparsers.add_parser("make_pieces")
-    make_pieces_parser.add_argument("--max-short-side-size", type=int, default=480)
-    make_pieces_parser.add_argument("--max-fps", type=int, default=6)
-    make_pieces_parser.add_argument("--leave-background", action="store_false")
+    make_pieces_parser.add_argument("--max-short-side-size", type=int, default=720)
+    make_pieces_parser.add_argument("--max-fps", type=int, default=3)
+    make_pieces_parser.add_argument("--leave-background", action="store_true")
     make_pieces_parser.add_argument("--sequential-num", action="store_true")
-    make_pieces_parser.add_argument("--container-size", type=int, default=244)
-    make_pieces_parser.add_argument("--border-size", type=int, default=8)
+    make_pieces_parser.add_argument("--container-size", type=int, default=0)
+    make_pieces_parser.add_argument("--border-size", type=int, default=0)
     make_pieces_parser.add_argument("--mask-dilation-ratio", type=int, default=4)
     make_pieces_parser.add_argument(
         "--fill-color", type=int, nargs=3, default=(0, 0, 0)
     )
+    make_pieces_parser.add_argument("--dont-save-mask", action="store_true")
     make_pieces_parser.set_defaults(func=command_make_pieces)
 
     args = root_parser.parse_args()
