@@ -2,7 +2,29 @@
 
 動画内の任意のオブジェクトを追跡し、それを切り抜き、データセットを作成するツール。
 
-### 使い始める
+## 使い始める
+
+### Dockerを使う
+
+#### 事前に必要なもの
+
+- Docker
+- Docker Compose
+- Nvidia Container Toolkit
+- Webブラウザ
+
+#### 起動
+
+リポジトリのルートに移動して、以下のコマンドを実行する。
+
+```sh
+docker compose up
+```
+
+起動後にブラウザで`localhost:8080`にアクセスする。
+
+
+### 手動でインストール
 
 #### 事前に必要なもの
 
@@ -20,16 +42,17 @@ cd piecemaker
 pip install -U -r requirements.txt
 ```
 
-#### 実行
+#### 起動
 
 ```sh
 cd ~/piecemaker
-python3 main.py
+python3 main.py gradio
 ```
 
 `Running on local URL: ...` と表示されたら、ブラウザでそのURLにアクセスする。
 
-#### 使い方
+
+## 使い方
 
 1. データセットを作成したい動画と、その動画内のオブジェクトの名前を入力し、`Send`をクリックする。  
     ![input video](imgs/step1-input-video.png)
